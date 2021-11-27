@@ -26,7 +26,7 @@ def trainDeepOmixNet_without(train_x, train_ytime, train_yevent, \
 		net.do_m1 = dropout_mask(Pathway_Nodes, Dropout_Rate[0])
 		net.do_m2 = dropout_mask(Hidden_Nodes, Dropout_Rate[1])
 
-		pred = net(train_x, train_yevent) 
+		pred, _ = net(train_x, train_yevent)
 		loss = neg_par_log_likelihood(pred, train_ytime, train_yevent) 
 		loss.backward()
 		opt.step()
@@ -69,7 +69,7 @@ def trainDeepOmixNet_without(train_x, train_ytime, train_yevent, \
 				transformed_param = copy_param.mul(param_mask)
 				copy_state_dict[name].copy_(transformed_param)
 				copy_net.train()
-				y_tmp = copy_net(train_x, train_yevent)
+				y_tmp, _ = copy_net(train_x, train_yevent)
 				loss_tmp = neg_par_log_likelihood(y_tmp, train_ytime, train_yevent)
 				S_loss.append(loss_tmp)
 			interp_S_loss = interp1d(S_set, S_loss, kind='cubic')
@@ -88,18 +88,19 @@ def trainDeepOmixNet_without(train_x, train_ytime, train_yevent, \
 
 		if epoch % 20 == 0: 
 			net.train()
-			train_pred = net(train_x, train_yevent)
+			train_pred, _ = net(train_x, train_yevent)
 			train_loss = neg_par_log_likelihood(train_pred, train_ytime, train_yevent).view(1,).item()
 
 			net.eval()
-			eval_pred = net(eval_x, eval_yevent)
+			eval_pred, _ = net(eval_x, eval_yevent)
 			eval_loss = neg_par_log_likelihood(eval_pred, eval_ytime, eval_yevent).view(1,).item()
 
 			train_cindex = c_index(train_pred, train_ytime, train_yevent)
 			eval_cindex = c_index(eval_pred, eval_ytime, eval_yevent)
-			print("The ",epoch,"th epoch : Loss in Train: ", train_loss)
+			print("The ",epoch,"th epoch : Loss in Train: ", train_loss, " Loss in Val: ", eval_loss)
 			if (math.isnan(train_loss)):
 				print(epoch,train_loss,"end_train")
 				break
+			torch.save(net.state_dict(), "{}.pt".format(epoch))
 
 	return (train_loss, eval_loss, train_cindex, eval_cindex)

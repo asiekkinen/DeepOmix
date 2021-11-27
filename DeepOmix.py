@@ -20,7 +20,8 @@ class DeepOmixNet(nn.Module):
 
 	def forward(self, x_1, x_2):
 		self.sc1.weight.data = self.sc1.weight.data.mul(self.pathway_mask)
-		x_1 = self.tanh(self.sc1(x_1))
+		functional_output = self.sc1(x_1)
+		x_1 = self.tanh(functional_output)
 		if self.training == True: 
 			x_1 = x_1.mul(self.do_m1)
 		x_1 = self.tanh(self.sc2(x_1))
@@ -30,5 +31,5 @@ class DeepOmixNet(nn.Module):
 		x_cat = torch.cat((x_1, x_2), 1)
 		lin_pred = self.sc4(x_cat)
 		
-		return lin_pred
+		return lin_pred, functional_output
 
